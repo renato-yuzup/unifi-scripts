@@ -22,6 +22,10 @@ restart_vpn() {
 # Function to retrieve the current external IP address
 get_external_ip() {
     external_ip=$(curl -s ifconfig.me)
+    if [ -z "$external_ip" ]; then
+        log_message "Error: Unable to retrieve external IP address."
+        exit 1
+    fi
     echo $external_ip
 }
 
@@ -31,7 +35,10 @@ replace_ip_in_configs() {
     local config_dir=$2
     log_message "Replacing IP addresses in .config files with $new_ip..."
     for file in "$config_dir"/*.config; do
-        sed -i -E "s/left=[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/left=$new_ip/g" "$file"
+        if ! sed -i -E "s/left=[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/left=$new_ip/g" "$file"; then
+            log_message "Error: Failed to update IP address in $file."
+            exit 1
+        fi
     done
     log_message "IP addresses successfully updated in all config files."
 }
